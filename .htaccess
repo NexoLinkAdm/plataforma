@@ -1,0 +1,14 @@
+# Redireciona tudo para /public
+RewriteEngine On
+
+# Evita redirecionar o próprio diretório /public para ele mesmo (para evitar loop)
+RewriteCond %{REQUEST_URI} !^/public/
+
+# Se não for arquivo ou diretório real, redireciona para /public
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+RewriteRule ^(.*)$ public/$1 [L,QSA]
+
+# Opcional: redirecionar acesso à raiz para /public
+RewriteRule ^$ public/ [L]
