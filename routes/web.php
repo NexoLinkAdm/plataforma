@@ -1,40 +1,61 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Marketplace\MercadoPagoController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ServiceController;
-use App\Http\Controllers\DashboardController; // <-- ADICIONE ESTE IMPORT
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| Rotas Públicas
+|--------------------------------------------------------------------------
+|
+| Rotas acessíveis para qualquer visitante, logado ou não.
+|
+*/
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-// Rota para o dashboard da criadora
-Route::get('/dashboard', DashboardController::class)
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+// Página pública de um serviço, acessada via slug
+Route::get('/servico/{service:slug}', [ServiceController::class, 'show'])->name('service.show.public');
 
-Route::middleware('auth')->group(function () {
+
+/*
+|--------------------------------------------------------------------------
+| Rotas Autenticadas
+|--------------------------------------------------------------------------
+|
+| Rotas que exigem que o usuário (criadora) esteja logado e com o
+| e-mail verificado.
+|
+*/
+
+Route::middleware(['auth', 'verified'])->group(function () {
+
+    // Dashboard Principal
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+    // Gerenciamento de Perfil (do Breeze)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Rotas para gerenciamento de serviços (protegidas por autenticação)
-    Route::middleware(['auth'])->group(function () {
-        Route::resource('servicos', ServiceController::class)->except(['show']);
-    });
-});
+    // Gerenciamento de Serviços (CRUD)
+    Route::resource('servicos', ServiceController::class)->except(['show']);
 
-// Rotas para o fluxo de conexão do Mercado Pago (protegidas por autenticação)
-Route::middleware(['auth'])->group(function () {
+    // Conexão com Mercado Pago (OAuth)
     Route::get('/conectar-mercadopago', [MercadoPagoController::class, 'redirectToOAuth'])->name('mp.connect');
     Route::get('/oauth/callback', [MercadoPagoController::class, 'handleOAuthCallback'])->name('mp.callback');
+
 });
 
-// Rota pública para visualização do serviço (não precisa de login)
-Route::get('/servico/{service:slug}', [ServiceController::class, 'show'])->name('service.show.public');
 
-
-// ... rotas de auth
-require __DIR__ . '/auth.php';
+/*
+|--------------------------------------------------------------------------
+| Rotas de Autenticação do Breeze
+|--------------------------------------------------------------------------
+*/
+require __DIR__.'/auth.php';```
