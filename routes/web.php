@@ -5,6 +5,8 @@ use App\Http\Controllers\Marketplace\MercadoPagoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CheckoutController; // <-- Adicionar este import
+
 
 /*
 |--------------------------------------------------------------------------
@@ -15,7 +17,8 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/servico/{service:slug}', [ServiceController::class, 'show'])->name('service.show.public');
+Route::get('/servico/{service:slug}', [CheckoutController::class, 'show'])->name('service.show.public');
+Route::get('/checkout/status', [CheckoutController::class, 'status'])->name('checkout.status');
 
 
 /*
