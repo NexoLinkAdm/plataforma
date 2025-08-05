@@ -123,7 +123,4 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
     
-
-    App\Providers\MercadoPagoServiceProvider::class, // <-- ADICIONE ESTA LINHA
-
 ];
