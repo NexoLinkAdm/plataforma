@@ -6,9 +6,13 @@ use App\Http\Requests\StoreServiceRequest; // <-- MUITO IMPORTANTE: Usar a nova 
 use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+
 
 class ServiceController extends Controller
-{
+{   
+    use AuthorizesRequests;
+
     public function index()
     {
         $services = Auth::user()->services()->latest()->paginate(10);
