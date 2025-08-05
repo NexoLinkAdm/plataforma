@@ -25,9 +25,17 @@ class ServiceController extends Controller
     }
 
     // Agora usa a StoreServiceRequest para validar
-    public function store(StoreServiceRequest $request)
+     public function store(StoreServiceRequest $request)
     {
-        Auth::user()->services()->create($request->validated());
+        // 1. Pega os dados validados
+        $validatedData = $request->validated();
+
+        // 2. Adiciona manualmente o ID do usuário logado
+        $validatedData['user_id'] = Auth::id();
+
+        // 3. Cria o serviço com o array completo
+        Service::create($validatedData);
+
         return redirect()->route('servicos.index')->with('status', 'Serviço criado com sucesso!');
     }
 
@@ -42,7 +50,7 @@ class ServiceController extends Controller
         return view('services.edit', compact('service'));
     }
 
-    // Agora usa a StoreServiceRequest para validar
+        // Agora usa a StoreServiceRequest para validar
     public function update(StoreServiceRequest $request, Service $service)
     {
         $this->authorize('update', $service);
