@@ -22,43 +22,57 @@ class PaymentController extends Controller
             'service_id' => 'required|integer|exists:services,id',
             'formData.issuer_id' => 'nullable|string',
             'formData.installments' => 'nullable|integer',
-            'formData.payer.identification.type' => 'nullable|string',
-            'formData.payer.identification.number' => 'nullable|string',
         ]);
 
         try {
             $service = Service::findOrFail($validated['service_id']);
             $formData = $validated['formData'];
+
             MercadoPagoConfig::setAccessToken($service->user->mp_access_token);
             $client = new PaymentClient();
 
+            // --- CORREÇÃO DE PRECISÃO E FORMATAÇÃO ---
+            // A API é sensível a problemas com floats.
+            // Arredondamos para 2 casas decimais para garantir consistência.
+            $transactionAmount = round($formData['transaction_amount'], 2);
+            $applicationFee = round(config('mercadopago.application_fee_cents') / 100, 2);
+            // --- FIM DA CORREÇÃO ---
+
             $paymentRequest = [
-                "transaction_amount" => $formData['transaction_amount'],
+                "transaction_amount" => $transactionAmount,
                 "description" => $service->title,
                 "payment_method_id" => $formData['payment_method_id'],
                 "payer" => ["email" => $formData['payer']['email']],
-                "application_fee" => config('mercadopago.application_fee_cents') / 100,
+                "application_fee" => $applicationFee,
             ];
 
             if (!empty($formData['token'])) $paymentRequest['token'] = $formData['token'];
-            if (!empty($formData['installments'])) $paymentRequest['installments'] = $formData['installments'];
+            if (!empty($formData['installments'])) $paymentRequest['installments'] = (int)$formData['installments'];
             if (!empty($formData['issuer_id'])) $paymentRequest['issuer_id'] = (int)$formData['issuer_id'];
-            if (!empty($formData['payer']['identification'])) {
-                $paymentRequest['payer']['identification'] = [
-                    'type' => $formData['payer']['identification']['type'],
-                    'number' => $formData['payer']['identification']['number']
-                ];
-            }
 
-            \Log::info('Requisição de pagamento:', $paymentRequest);
+            \Log::info('Requisição de pagamento (Formatada):', $paymentRequest);
             $payment = $client->create($paymentRequest);
             \Log::info('Pagamento criado:', ['id' => $payment->id, 'status' => $payment->status]);
 
-            return response()->json(['status' => $payment->status, 'payment_id' => $payment->id, 'status_detail' => $payment->status_detail ?? null]);
+            return response()->json([
+                'status' => $payment->status,
+                'payment_id' => $payment->id,
+            ]);
+
         } catch (MPApiException $e) {
             $errorDetails = $e->getApiResponse()->getContent();
             \Log::error('MP API Error:', ['error' => $errorDetails, 'request' => $request->all()]);
-            return response()->json(['error' => true, 'message' => 'Pagamento recusado.', 'details' => $errorDetails], 400);
+
+            $errorMessage = $errorDetails['message'] ?? 'Pagamento recusado.';
+            if(isset($errorDetails['cause'][0]['description'])) {
+                $errorMessage = $errorDetails['cause'][0]['description'];
+            }
+
+            return response()->json([
+                'error' => true,
+                'message' => $errorMessage,
+                'details' => $errorDetails
+            ], 400);
         } catch (\Exception $e) {
             \Log::error('Erro no processamento: ' . $e->getMessage(), ['request' => $request->all()]);
             return response()->json(['error' => true, 'message' => 'Ocorreu um erro interno.'], 500);
