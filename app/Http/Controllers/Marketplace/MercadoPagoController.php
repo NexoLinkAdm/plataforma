@@ -23,7 +23,9 @@ class MercadoPagoController extends Controller
             config('mercadopago.client_id'),
             config('mercadopago.oauth_redirect_uri')
         );
-
+        // Linha de debug temporária
+        dd("A URL completa enviada ao MP é:", $url, "A URI de redirecionamento que deve estar no painel é:", config('mercadopago.oauth_redirect_uri'));
+        // Redireciona para a URL de autorização do Mercado Pago
         return Redirect::to($url);
     }
 
