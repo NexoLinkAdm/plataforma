@@ -33,7 +33,7 @@ Route::get('/servico/{service:slug}', [ServiceController::class, 'show'])->name(
 |
 */
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth'])->group(function () {
 
     // Dashboard Principal
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
