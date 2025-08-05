@@ -2,10 +2,9 @@
 
 namespace App\Providers;
 
-// ADICIONE ESTAS DUAS LINHAS NO TOPO, JUNTO COM OS OUTROS 'use'
+// Estes são os imports corretos para ESTE arquivo
 use App\Models\Service;
 use App\Policies\ServicePolicy;
-
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider
@@ -16,8 +15,7 @@ class AuthServiceProvider extends ServiceProvider
      * @var array<class-string, class-string>
      */
     protected $policies = [
-        // ESTA É A LINHA QUE RESOLVE O BUG.
-        // ELA DIZ: "PARA O MODELO 'Service', USE A POLÍTICA 'ServicePolicy'".
+        // A linha de registro da nossa policy
         Service::class => ServicePolicy::class,
     ];
 
