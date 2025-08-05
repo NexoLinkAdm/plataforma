@@ -2,9 +2,7 @@
 
 namespace App\Models;
 
-// Adicione esta linha no topo
 use Illuminate\Database\Eloquent\Casts\Attribute;
-
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -23,7 +21,6 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        // Adicione os novos campos aqui
         'mp_user_id',
         'mp_access_token',
         'mp_refresh_token',
@@ -39,7 +36,6 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
-        // É uma boa prática ocultar os tokens
         'mp_access_token',
         'mp_refresh_token',
     ];
@@ -54,7 +50,6 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            // Trata as datas e CRIPTOGRAFA os tokens
             'mp_token_expires_at' => 'datetime',
             'mp_connected_at' => 'datetime',
             'mp_access_token' => 'encrypted',
@@ -69,4 +64,20 @@ class User extends Authenticatable
     {
         return !is_null($this->mp_user_id) && !is_null($this->mp_access_token);
     }
+
+    // =================================================================
+    //  INÍCIO DA CORREÇÃO - ADICIONE ESTE MÉTODO
+    // =================================================================
+
+    /**
+     * RELACIONAMENTO: Uma criadora (User) pode ter muitos serviços (Service).
+     */
+    public function services()
+    {
+        return $this->hasMany(Service::class);
+    }
+
+    // =================================================================
+    //  FIM DA CORREÇÃO
+    // =================================================================
 }
