@@ -5,9 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Service;
 use Illuminate\Http\Request;
 use MercadoPago\Client\Preference\PreferenceClient;
-use MercadoPago\Client\Preference\PreferenceItemRequest;
 use MercadoPago\Exceptions\MPApiException;
-use MercadoPago\SDK;
+// NÃO PRECISAMOS MAIS DE: use MercadoPago\SDK;
+// ADICIONAMOS:
+use MercadoPago\MercadoPagoConfig;
 
 class CheckoutController extends Controller
 {
@@ -16,53 +17,65 @@ class CheckoutController extends Controller
      */
     public function show(Service $service)
     {
-        // Garante que o serviço está ativo
         if (!$service->is_active) {
             abort(404);
         }
 
-        try {
-            // Define o token de acesso da criadora para esta operação
-            SDK::setAccessToken($service->user->mp_access_token);
+        // Recupera o token de acesso da criadora
+        $creatorAccessToken = $service->user->mp_access_token;
+        if (!$creatorAccessToken) {
+            return back()->with('error', 'A criadora deste serviço não está com a conta de pagamentos conectada.');
+        }
 
-            // Cria o cliente de preferência
+        try {
+            // --- NOVA ABORDAGEM SDK V3----
+            // 1. Define o token de acesso da CRIADORA para esta requisição específica.
+            MercadoPagoConfig::setAccessToken($creatorAccessToken);
+            // --- FIM DA NOVA ABORDAGEM ---
+
+            // 2. Cria o cliente de preferência (ele usará o token que acabamos de definir)
             $client = new PreferenceClient();
 
-            // Cria o item da preferência
-            $item = new PreferenceItemRequest();
-            $item->id = $service->id;
-            $item->title = $service->title;
-            $item->description = "Serviço de UGC: " . $service->description;
-            $item->quantity = 1;
-            $item->unit_price = $service->price_in_cents / 100; // Preço deve ser em float
-            $item->currency_id = "BRL";
-
-            // Define a comissão da plataforma
+            // 3. Define a comissão da plataforma
             $application_fee = config('mercadopago.application_fee_cents') / 100;
 
-            // Cria a preferência
+            // 4. Cria a preferência
             $preference = $client->create([
-                "items" => [$item],
-                "marketplace_fee" => $application_fee, // A comissão
-                "external_reference" => "service_{$service->id}_" . time(), // Referência única
+                "items" => [
+                    [
+                        "id" => $service->id,
+                        "title" => $service->title,
+                        "description" => "Serviço UGC",
+                        "quantity" => 1,
+                        "unit_price" => $service->price_in_cents / 100,
+                        "currency_id" => "BRL",
+                    ]
+                ],
+                "marketplace_fee" => $application_fee,
+                "external_reference" => "service_{$service->id}_" . time(),
                 "back_urls" => [
                     'success' => route('checkout.status'),
                     'failure' => route('checkout.status'),
                     'pending' => route('checkout.status'),
                 ],
-                "auto_return" => "approved", // Retorna automaticamente em caso de sucesso
+                "auto_return" => "approved",
             ]);
 
         } catch (MPApiException $e) {
-            // Lida com erros da API do Mercado Pago
-            // dd("Erro de API do MP", $e->getApiResponse()->getContent());
-            return back()->with('error', 'Não foi possível iniciar o pagamento. Verifique se a conta do criador está configurada corretamente.');
+            // Log detalhado para o desenvolvedor
+            \Log::error('MP API Error on Checkout', [
+                'service_id' => $service->id,
+                'creator_id' => $service->user->id,
+                'error_message' => $e->getApiResponse()->getContent()
+            ]);
+            // Mensagem genérica para o usuário
+            return redirect()->route('home')->with('error', 'Não foi possível iniciar o pagamento. A configuração da criadora pode estar incompleta.');
         } catch (\Exception $e) {
-            // Lida com outros erros
-            // dd("Erro geral", $e->getMessage());
-            return back()->with('error', 'Ocorreu um erro inesperado. Tente novamente mais tarde.');
+            \Log::critical('General Error on Checkout', ['message' => $e->getMessage()]);
+            return redirect()->route('home')->with('error', 'Ocorreu um erro inesperado. Nossa equipe já foi notificada.');
         }
 
+        // A Public Key é sempre a da plataforma, para o frontend
         $publicKey = config('mercadopago.public_key');
         $preferenceId = $preference->id;
 
@@ -74,8 +87,6 @@ class CheckoutController extends Controller
      */
     public function status(Request $request)
     {
-        // Aqui vamos criar uma tabela de transações para registrar o resultado.
-        // Por enquanto, vamos apenas exibir o status.
         return view('checkout.status', [
             'status' => $request->get('status'),
             'payment_id' => $request->get('payment_id'),
