@@ -5,10 +5,9 @@ namespace App\Http\Controllers\Marketplace;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
-use MercadoPago\Client\OAuth\OAuthClient;
+use MercadoPago\Client\OAuth\OAuthClient; // <-- FIX: Importa a classe que estava faltando.
 use MercadoPago\Exceptions\MPApiException;
 
 class MercadoPagoController extends Controller
@@ -22,7 +21,6 @@ class MercadoPagoController extends Controller
             "https://auth.mercadopago.com.br/authorization?client_id=%s&response_type=code&platform_id=mp&redirect_uri=%s",
             config('mercadopago.client_id'),
             config('mercadopago.oauth_redirect_uri')
-
         );
 
         return Redirect::to($url);
