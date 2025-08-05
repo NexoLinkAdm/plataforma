@@ -2,20 +2,27 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
+// ADICIONE ESTAS DUAS LINHAS NO TOPO, JUNTO COM OS OUTROS 'use'
+use App\Models\Service;
+use App\Policies\ServicePolicy;
 
-class AppServiceProvider extends ServiceProvider
+use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+
+class AuthServiceProvider extends ServiceProvider
 {
     /**
-     * Register any application services.
+     * The model to policy mappings for the application.
+     *
+     * @var array<class-string, class-string>
      */
-    public function register(): void
-    {
-        //
-    }
+    protected $policies = [
+        // ESTA É A LINHA QUE RESOLVE O BUG.
+        // ELA DIZ: "PARA O MODELO 'Service', USE A POLÍTICA 'ServicePolicy'".
+        Service::class => ServicePolicy::class,
+    ];
 
     /**
-     * Bootstrap any application services.
+     * Register any authentication / authorization services.
      */
     public function boot(): void
     {

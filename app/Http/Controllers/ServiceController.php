@@ -38,6 +38,7 @@ class ServiceController extends Controller
 
     public function edit(Service $service)
     {
+        $this->authorize('update', $service);
         return view('services.edit', compact('service'));
     }
 
