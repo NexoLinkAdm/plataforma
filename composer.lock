@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1214a2dbf08c5bd191387e355895f3ca",
+    "content-hash": "b3d233eac45ac5addc0e034358e9a218",
     "packages": [
         {
             "name": "brick/math",
@@ -2093,48 +2093,6 @@
                 "source": "https://github.com/mercadopago/sdk-php/tree/3.5.1"
             },
             "time": "2025-06-09T13:08:57+00:00"
-        },
-        {
-            "name": "mercadopago/sdk",
-            "version": "v0.5.6",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/mercadopago/DEPRECATED-sdk-php.git",
-                "reference": "67f65735d5d720a7fc2569163f5c7d150adc613d"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/mercadopago/DEPRECATED-sdk-php/zipball/67f65735d5d720a7fc2569163f5c7d150adc613d",
-                "reference": "67f65735d5d720a7fc2569163f5c7d150adc613d",
-                "shasum": ""
-            },
-            "require": {
-                "ext-curl": "*"
-            },
-            "type": "library",
-            "autoload": {
-                "classmap": [
-                    "lib/mercadopago.php"
-                ]
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "authors": [
-                {
-                    "name": "Horacio Casatti",
-                    "email": "horacio.casatti@mercadolibre.com"
-                }
-            ],
-            "description": "MercadoPago SDK module for Payments integration.",
-            "keywords": [
-                "mercadopago",
-                "sdk"
-            ],
-            "support": {
-                "issues": "https://github.com/mercadopago/DEPRECATED-sdk-php/issues",
-                "source": "https://github.com/mercadopago/DEPRECATED-sdk-php/tree/v0.5.6"
-            },
-            "abandoned": true,
-            "time": "2019-04-15T14:29:38+00:00"
         },
         {
             "name": "monolog/monolog",

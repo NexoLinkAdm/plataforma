@@ -14,34 +14,38 @@ class PaymentController extends Controller
     {
         \Log::info('Dados recebidos no processPayment:', $request->all());
 
+        // Validação robusta dos dados vindos do frontend
         $validated = $request->validate([
             'formData.token' => 'required|string|min:32',
             'formData.payment_method_id' => 'required|string',
             'formData.transaction_amount' => 'required|numeric|min:0.01',
             'formData.payer.email' => 'required|email',
             'formData.payer.identification.type' => 'required|string|in:CPF,CNPJ',
-            'formData.payer.identification.number' => 'required|string|min:11',
+            'formData.payer.identification.number' => 'required|string',
             'service_id' => 'required|integer|exists:services,id',
             'formData.issuer_id' => 'nullable|string',
-            'formData.installments' => 'required|integer|min:1|max:24',
+            'formData.installments' => 'required|integer|min:1',
         ]);
 
         try {
             $service = Service::findOrFail($validated['service_id']);
             $formData = $validated['formData'];
+
+            // Usa o Access Token da criadora para receber o pagamento
             MercadoPagoConfig::setAccessToken($service->user->mp_access_token);
             $client = new PaymentClient();
 
+            // Formata os valores para evitar erros de precisão
             $transactionAmount = round((float)$formData['transaction_amount'], 2);
-            $applicationFee = round(config('mercadopago.application_fee_cents', 1000) / 100, 2);
+            $applicationFee = round(config('mercadopago.application_fee_cents', 0) / 100, 2);
 
             $paymentRequest = [
                 "transaction_amount" => $transactionAmount,
                 "token" => trim($formData['token']),
-                "description" => $service->title ?? 'Serviço',
+                "description" => $service->title,
                 "installments" => (int)$formData['installments'],
                 "payment_method_id" => $formData['payment_method_id'],
-                "application_fee" => $applicationFee,
+                "application_fee" => $applicationFee, // Nossa comissão
                 "payer" => [
                     "email" => $formData['payer']['email'],
                     "identification" => [
@@ -49,15 +53,14 @@ class PaymentController extends Controller
                         "number" => preg_replace('/\D/', '', $formData['payer']['identification']['number']),
                     ]
                 ],
-                "statement_descriptor" => substr($service->title ?? 'Servico', 0, 22),
                 "external_reference" => "service_{$service->id}_" . time(),
             ];
 
-            if (!empty($formData['issuer_id']) && in_array($formData['payment_method_id'], ['visa', 'master', 'amex', 'elo'])) {
+            if (!empty($formData['issuer_id'])) {
                 $paymentRequest['issuer_id'] = (int)$formData['issuer_id'];
             }
 
-            \Log::info('Requisição de pagamento:', $paymentRequest);
+            \Log::info('Requisição de pagamento (Formatada):', $paymentRequest);
             $payment = $client->create($paymentRequest);
             \Log::info('Pagamento criado:', ['id' => $payment->id, 'status' => $payment->status]);
 
@@ -66,14 +69,16 @@ class PaymentController extends Controller
         } catch (MPApiException $e) {
             $errorDetails = $e->getApiResponse()->getContent();
             \Log::error('MP API Error:', ['error' => $errorDetails, 'request' => $request->all()]);
-
-            if (isset($errorDetails['error']) && $errorDetails['error'] === 'bad_request') {
-                foreach (($errorDetails['cause'] ?? []) as $cause) {
-                    if ($cause['code'] === 2006) {
-                        return response()->json(['error' => true, 'message' => 'O token do cartão expirou. Por favor, insira os dados do cartão novamente.', 'code' => 'token_expired', 'retry' => true], 400);
-                    }
-                }
+            
+            // Tratamento de erro específico para token inválido/expirado
+            if (isset($errorDetails['cause'][0]['code']) && $errorDetails['cause'][0]['code'] === 2006) {
+                return response()->json([
+                    'error' => true, 
+                    'message' => 'O token do cartão expirou. Por favor, tente novamente.',
+                    'code' => 'token_expired'
+                ], 400);
             }
+
             $errorMessage = $errorDetails['cause'][0]['description'] ?? $errorDetails['message'] ?? 'Pagamento recusado.';
             return response()->json(['error' => true, 'message' => $errorMessage, 'details' => $errorDetails], 400);
         } catch (\Exception $e) {

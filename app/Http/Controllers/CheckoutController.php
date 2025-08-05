@@ -12,21 +12,23 @@ class CheckoutController extends Controller
      */
     public function show(Service $service)
     {
+        // Valida se o serviço pode ser vendido
         if (!$service->is_active || !$service->user->hasMercadoPagoConnected()) {
             return redirect()->route('home')->with('error', 'Este serviço não está disponível no momento.');
         }
 
-        // A Public Key é sempre a da PLATAFORMA
+        // A Public Key para o frontend é sempre a da PLATAFORMA.
         $publicKey = config('mercadopago.public_key');
 
         return view('services.show_public', compact('service', 'publicKey'));
     }
 
     /**
-     * Lida com o retorno do Mercado Pago após o pagamento (redirecionamento).
+     * Lida com o retorno do Mercado Pago (para redirecionamentos de alguns métodos de pagamento).
      */
     public function status(Request $request)
     {
+        // Esta view será mais utilizada quando implementarmos Boleto/Pix.
         return view('checkout.status', [
             'status' => $request->get('status'),
             'payment_id' => $request->get('payment_id'),
