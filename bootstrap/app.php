@@ -10,14 +10,17 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware): void {
-        //
+    ->withMiddleware(function (Middleware $middleware) {
+        // Middlewares globais podem ser registrados aqui se necessário.
+        // Por enquanto, não precisamos mexer.
     })
-    ->withExceptions(function (Exceptions $exceptions): void {
-        //
-
+    ->withExceptions(function (Exceptions $exceptions) {
+        // Tratamento de exceções globais pode ser configurado aqui.
+    })
     ->withProviders([
-        \App\Providers\MercadoPagoServiceProvider::class, // O que já tínhamos
-        \App\Providers\AuthServiceProvider::class,      // <-- ADICIONE ESTA LINHA
-
-    })->create();
+        // ESTA É A FORMA CORRETA DE REGISTRAR PROVIDERS CUSTOMIZADOS
+        // NO LARAVEL 12.29+
+        \App\Providers\MercadoPagoServiceProvider::class,
+        \App\Providers\AuthServiceProvider::class,
+    ])
+    ->create();
