@@ -4,7 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use MercadoPago\MercadoPagoConfig;
-use MercadoPago\SDK;
+
 
 class MercadoPagoServiceProvider extends ServiceProvider
 {
@@ -18,8 +18,7 @@ class MercadoPagoServiceProvider extends ServiceProvider
         $accessToken = config('mercadopago.access_token');
 
         if ($accessToken) {
-            SDK::setAccessToken($accessToken);
-
+            MercadoPagoConfig::setAccessToken($accessToken);
         }
     }
 }
