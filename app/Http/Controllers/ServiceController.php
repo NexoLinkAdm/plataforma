@@ -4,15 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreServiceRequest;
 use App\Models\Service;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate; // Usaremos o Gate para uma verificação simples
 
 class ServiceController extends Controller
 {
-    use AuthorizesRequests;
-
     public function index()
     {
-        $services = auth()->user()->services()->latest()->paginate(10);
+        $services = Auth::user()->services()->latest()->paginate(10);
         return view('services.index', compact('services'));
     }
 
@@ -23,11 +23,7 @@ class ServiceController extends Controller
 
     public function store(StoreServiceRequest $request)
     {
-        // Esta é a forma mais segura e idiomática do Laravel.
-        // O `services()` é o relacionamento que definimos no Model User.
-        // O `create()` neste contexto automaticamente adiciona o `user_id` correto.
-        auth()->user()->services()->create($request->validated());
-
+        Auth::user()->services()->create($request->validated());
         return redirect()->route('servicos.index')->with('status', 'Serviço criado com sucesso!');
     }
 
@@ -36,22 +32,45 @@ class ServiceController extends Controller
         return view('services.show_public', compact('service'));
     }
 
+    /**
+     * LÓGICA SIMPLIFICADA PARA 'EDITAR'
+     */
     public function edit(Service $service)
     {
-        $this->authorize('update', $service);
+        // Verificação manual: o ID do usuário logado é o mesmo do dono do serviço?
+        if (Auth::id() !== $service->user_id) {
+            // Se não for, aborte a operação com um erro 403.
+            abort(403, 'Acesso Negado');
+        }
+
+        // Se a verificação passar, mostre a view.
         return view('services.edit', compact('service'));
     }
 
+    /**
+     * LÓGICA SIMPLIFICADA PARA 'ATUALIZAR'
+     */
     public function update(StoreServiceRequest $request, Service $service)
     {
-        $this->authorize('update', $service);
+        // Verificação manual.
+        if (Auth::id() !== $service->user_id) {
+            abort(403, 'Acesso Negado');
+        }
+
         $service->update($request->validated());
         return redirect()->route('servicos.index')->with('status', 'Serviço atualizado com sucesso!');
     }
 
+    /**
+     * LÓGICA SIMPLIFICADA PARA 'EXCLUIR'
+     */
     public function destroy(Service $service)
     {
-        $this->authorize('delete', $service);
+        // Verificação manual.
+        if (Auth::id() !== $service->user_id) {
+            abort(403, 'Acesso Negado');
+        }
+
         $service->delete();
         return redirect()->route('servicos.index')->with('status', 'Serviço excluído com sucesso!');
     }

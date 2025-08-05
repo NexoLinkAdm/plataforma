@@ -5,6 +5,8 @@ namespace App\Policies;
 use App\Models\Service;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
+use Illuminate\Support\Facades\Gate;
+
 
 class ServicePolicy
 {
