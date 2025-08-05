@@ -37,75 +37,41 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', async function () {
-            // As chaves são passadas do backend (controller) para a view
-            const publicKey = '{{ $publicKey ?? '' }}';
-            const preferenceId = '{{ $preferenceId ?? '' }}';
+    document.addEventListener('DOMContentLoaded', async function () {
+        const publicKey = '{{ $publicKey ?? '' }}';
+        const preferenceId = '{{ $preferenceId ?? '' }}';
 
-            if (!publicKey || !preferenceId) {
-                document.getElementById('paymentBrick_container').innerText = 'Erro: Não foi possível carregar as informações de pagamento. Tente novamente.';
-                return;
-            }
+        if (!publicKey || !preferenceId) {
+            document.getElementById('paymentBrick_container').innerText = 'Erro: Falha ao carregar informações de pagamento (ID: P01).';
+            return;
+        }
 
-            const mp = new MercadoPago(publicKey, { locale: 'pt-BR' });
-            const bricksBuilder = mp.bricks();
+        const mp = new MercadoPago(publicKey, { locale: 'pt-BR' });
 
-            // Configurações do Brick
-            const settings = {
+        try {
+            await mp.bricks().create('payment', 'paymentBrick_container', {
                 initialization: {
-                    amount: {{ $service->price_in_cents / 100 }}, // Valor total a ser pago
+                    // Ao usar preferenceId, o 'amount' é opcional,
+                    // pois ele já está dentro da preferência.
                     preferenceId: preferenceId,
                 },
                 customization: {
                     visual: {
-                        brand: "{{ config('mercadopago.app_name', 'Sua Plataforma') }}", // Nome da sua plataforma
-                        style: {
-                            theme: 'default', // 'default', 'dark', 'bootstrap'
-                        }
-                    },
+                        brand: "{{ config('mercadopago.app_name', 'Sua Plataforma') }}",
+                    }
                 },
                 callbacks: {
-                    onReady: () => {
-                        /*
-                         * Callback chamado quando o Brick estiver pronto.
-                         * Ex: Habilitar o botão de pagamento
-                         */
-                        console.log('Brick está pronto.');
-                    },
-                    onSubmit: ({ selectedPaymentMethod, formData }) => {
-                        /*
-                         * Callback chamado quando o usuário clica no botão de pagar.
-                         * O Brick cuida do envio dos dados do formulário para o Mercado Pago.
-                         * A Promise vazia indica ao Brick para seguir com seu fluxo padrão.
-                         */
-                        console.log('Formulário enviado.');
-                        return new Promise(() => {});
-                    },
-                    onError: (error) => {
-                        /*
-                         * Callback chamado para todos os erros que ocorrem no Brick.
-                         * Ex: Cartão recusado, dados inválidos, etc.
-                         */
-                        console.error('Erro no Brick:', error);
-                        const errorContainer = document.getElementById('payment_error_container');
-                        if (error.message) {
-                            errorContainer.innerText = error.message;
-                        } else {
-                            errorContainer.innerText = 'Ocorreu um erro ao processar o pagamento. Verifique os dados e tente novamente.';
-                        }
-                    },
+                    onError: (error) => console.error('Erro no Brick:', error),
+                    onReady: () => console.log('Brick pronto.'),
+                    onSubmit: () => console.log('Formulário enviado.'),
                 },
-            };
-
-            // `renderPaymentBrick` é uma função async, então usamos `await`
-            try {
-                window.paymentBrickController = await bricksBuilder.create('payment', 'paymentBrick_container', settings);
-                console.log('Brick renderizado com sucesso.');
-            } catch (error) {
-                console.error('Erro fatal ao renderizar o Brick:', error);
-                document.getElementById('paymentBrick_container').innerText = 'Não foi possível carregar o formulário de pagamento. Por favor, recarregue a página.';
-            }
-        });
-    </script>
+            });
+            console.log('Brick renderizado com sucesso.');
+        } catch (e) {
+            console.error('Erro ao renderizar o Brick:', e);
+            document.getElementById('paymentBrick_container').innerText = 'Erro fatal ao carregar o formulário de pagamento (ID: P02).';
+        }
+    });
+</script>
 </body>
 </html>
