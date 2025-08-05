@@ -1,30 +1,25 @@
 <?php
 
-namespace App\Providers;
+namespace App\Policies;
 
-// ADICIONE ESTAS LINHAS NO TOPO:
 use App\Models\Service;
-use App\Policies\ServicePolicy;
+use App\Models\User;
 
-use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
-
-class AuthServiceProvider extends ServiceProvider
+class ServicePolicy
 {
     /**
-     * The model to policy mappings for the application.
-     *
-     * @var array<class-string, class-string>
+     * Determine whether the user can update the model.
      */
-    protected $policies = [
-        // ADICIONE ESTA LINHA DENTRO DO ARRAY:
-        Service::class => ServicePolicy::class,
-    ];
+    public function update(User $user, Service $service): bool
+    {
+        return $user->id === $service->user_id;
+    }
 
     /**
-     * Register any authentication / authorization services.
+     * Determine whether the user can delete the model.
      */
-    public function boot(): void
+    public function delete(User $user, Service $service): bool
     {
-        //
+        return $user->id === $service->user_id;
     }
 }
