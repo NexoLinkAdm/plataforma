@@ -1,29 +1,40 @@
 <?php
 
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Marketplace\MercadoPagoController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\CheckoutController; // <-- Adicionar este import
-
 
 /*
 |--------------------------------------------------------------------------
 | Rotas Públicas (Acessíveis a todos)
 |--------------------------------------------------------------------------
+|
+| Estas rotas não exigem que o usuário esteja logado.
+| O middleware 'web' (que inclui sessão e CSRF) é aplicado automaticamente.
+|
 */
+
 Route::get('/', function () {
     return view('welcome');
 });
 
+// Exibe a página de vendas/checkout de um serviço
 Route::get('/servico/{service:slug}', [CheckoutController::class, 'show'])->name('service.show.public');
+
+// Recebe o status de retorno do Mercado Pago (para pagamentos como Boleto/Pix)
 Route::get('/checkout/status', [CheckoutController::class, 'status'])->name('checkout.status');
+
+// Processa o pagamento via AJAX vindo do Checkout Brick (protegido por CSRF)
+Route::post('/process-payment', [PaymentController::class, 'processPayment'])->name('payment.process');
 
 
 /*
 |--------------------------------------------------------------------------
-| Rotas Protegidas (Exigem Login)
+| Rotas Protegidas (Exigem que a Criadora esteja logada)
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth'])->group(function () {
@@ -40,7 +51,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/oauth/callback', [MercadoPagoController::class, 'handleOAuthCallback'])->name('mp.callback');
 
     // Gerenciamento de Serviços (CRUD)
-    // A rota 'index' está aqui para ser acessada pelo menu de navegação.
     Route::get('/servicos', [ServiceController::class, 'index'])->name('servicos.index');
     Route::get('/servicos/criar', [ServiceController::class, 'create'])->name('servicos.create');
     Route::post('/servicos', [ServiceController::class, 'store'])->name('servicos.store');
@@ -50,4 +60,9 @@ Route::middleware(['auth'])->group(function () {
 
 });
 
+/*
+|--------------------------------------------------------------------------
+| Rotas de Autenticação do Breeze
+|--------------------------------------------------------------------------
+*/
 require __DIR__.'/auth.php';

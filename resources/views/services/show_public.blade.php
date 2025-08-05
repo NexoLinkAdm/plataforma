@@ -1,85 +1,92 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comprar: {{ $service->title }}</title>
+    <title>Checkout - {{ $service->title }}</title>
+    <!-- CSRF Token para requests AJAX -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://sdk.mercadopago.com/js/v2"></script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
-
-    <div class="w-full max-w-xl bg-white rounded-xl shadow-lg overflow-hidden">
-        <div class="p-8">
-            <header class="text-center mb-6">
-                <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Finalize seu Pagamento</h1>
-                <p class="text-gray-500 mt-1">Plataforma Segura via Mercado Pago</p>
-            </header>
-
-            {{-- Resumo do Pedido --}}
-            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-8 border border-gray-200 dark:border-gray-700">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h2 class="font-semibold text-gray-800 dark:text-gray-200">{{ $service->title }}</h2>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">por {{ $service->user->name }}</p>
-                    </div>
-                    <div class="text-lg font-bold text-gray-900 dark:text-gray-100">
-                        R$ {{ number_format($service->price_in_cents / 100, 2, ',', '.') }}
-                    </div>
-                </div>
-            </div>
-
-            {{-- Container onde o Brick será renderizado --}}
-            <div id="paymentBrick_container"></div>
-            {{-- Mensagem de erro para o usuário --}}
-            <div id="payment_error_container" class="text-red-500 text-center text-sm mt-4"></div>
+    <div class="container w-full max-w-lg mx-auto bg-white rounded-lg shadow-lg p-8">
+        <div class="service-info text-center border-b pb-6 mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">{{ $service->title }}</h1>
+            <p class="text-gray-500">por {{ $service->user->name }}</p>
+            <div class="text-3xl font-bold text-blue-600 mt-4">R$ {{ number_format($service->price_in_cents / 100, 2, ',', '.') }}</div>
         </div>
+
+        <div id="paymentBrick_container">
+            <p class="text-center text-gray-500 p-8">Carregando formulário de pagamento...</p>
+        </div>
+        <div id="payment_error_container" class="hidden mt-4 p-3 bg-red-100 text-red-700 rounded-md text-sm"></div>
     </div>
 
-   <script>
-    document.addEventListener('DOMContentLoaded', async function () {
-        const publicKey = '{{ $publicKey ?? '' }}';
-        const preferenceId = '{{ $preferenceId ?? '' }}';
+    <script>
+        const mp = new MercadoPago('{{ $publicKey }}', { locale: 'pt-BR' });
+        const bricksBuilder = mp.bricks();
 
-        if (!publicKey || !preferenceId) {
-            document.getElementById('paymentBrick_container').innerText = 'Erro: Falha ao carregar informações de pagamento (ID: P01).';
-            return;
-        }
-
-        const mp = new MercadoPago(publicKey, { locale: 'pt-BR' });
-
-        try {
-            await mp.bricks().create('payment', 'paymentBrick_container', {
+        const renderPaymentBrick = async (bricksBuilder) => {
+            const settings = {
                 initialization: {
-                    // --- INÍCIO DA CORREÇÃO ---
-                    // A API do Brick exige AMBOS os parâmetros:
-                    // 1. O valor total da transação.
                     amount: {{ $service->price_in_cents / 100 }},
-                    // 2. O ID da preferência que contém os detalhes (split, etc).
-                    preferenceId: preferenceId,
-                    // --- FIM DA CORREÇÃO ---
+                    // A preferenceId ainda é útil para rastreamento e algumas configurações
+                    preferenceId: '{{ $preferenceId }}',
                 },
                 customization: {
-                    visual: {
-                        brand: "{{ config('mercadopago.app_name', 'Sua Plataforma') }}",
-                    }
+                    visual: { style: { theme: 'default' } },
                 },
                 callbacks: {
+                    onReady: () => {
+                        console.log('Brick está pronto.');
+                    },
                     onError: (error) => {
                         console.error('Erro no Brick:', error);
                         const errorContainer = document.getElementById('payment_error_container');
-                        errorContainer.innerText = 'Ocorreu um erro. Verifique os dados e tente novamente.';
+                        errorContainer.innerText = 'Ocorreu um erro ao carregar o pagamento. Por favor, recarregue a página.';
+                        errorContainer.style.display = 'block';
                     },
-                    onReady: () => console.log('Brick pronto.'),
-                    onSubmit: () => console.log('Formulário enviado.'),
-                },
-            });
-            console.log('Brick renderizado com sucesso.');
-        } catch (e) {
-            console.error('Erro fatal ao renderizar o Brick:', e);
-            document.getElementById('paymentBrick_container').innerText = 'Erro fatal ao carregar o formulário de pagamento (ID: P02).';
-        }
-    });
-</script>
+                    onSubmit: async ({ selectedPaymentMethod, formData }) => {
+                        // Envia os dados para o seu backend para processar o pagamento
+                        try {
+                            const response = await fetch("{{ route('payment.process') }}", {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                },
+                                body: JSON.stringify({
+                                    formData: formData,
+                                    service_id: {{ $service->id }}
+                                })
+                            });
+
+                            const data = await response.json();
+
+                            if (!response.ok) {
+                                // Exibe o erro retornado pelo seu backend
+                                const errorContainer = document.getElementById('payment_error_container');
+                                errorContainer.innerText = data.message || 'Pagamento recusado. Tente outro cartão.';
+                                errorContainer.style.display = 'block';
+                                throw new Error(data.message);
+                            }
+
+                            // Pagamento bem-sucedido, redireciona para a página de status
+                            window.location.href = `/checkout/status?status=${data.status}&payment_id=${data.payment_id}`;
+
+                        } catch (error) {
+                            console.error('Falha ao processar pagamento:', error);
+                            // Este reject() pode ser usado para parar o fluxo do Brick se necessário
+                            return Promise.reject();
+                        }
+                    },
+                }
+            };
+            window.paymentBrickController = await bricksBuilder.create('payment', 'paymentBrick_container', settings);
+        };
+
+        renderPaymentBrick(bricksBuilder);
+    </script>
 </body>
 </html>
