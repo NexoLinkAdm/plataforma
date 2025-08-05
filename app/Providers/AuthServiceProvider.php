@@ -2,10 +2,8 @@
 
 namespace App\Providers;
 
-// Estes são os imports corretos para ESTE arquivo
-use App\Models\Service;
-use App\Policies\ServicePolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -15,8 +13,7 @@ class AuthServiceProvider extends ServiceProvider
      * @var array<class-string, class-string>
      */
     protected $policies = [
-        // A linha de registro da nossa policy
-        Service::class => ServicePolicy::class,
+        // Em breve, adicionaremos nossa policy aqui.
     ];
 
     /**

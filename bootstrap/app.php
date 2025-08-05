@@ -15,4 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
+
+    ->withProviders([
+        \App\Providers\MercadoPagoServiceProvider::class, // O que já tínhamos
+        \App\Providers\AuthServiceProvider::class,      // <-- ADICIONE ESTA LINHA
+
     })->create();
