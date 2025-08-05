@@ -56,7 +56,7 @@ class PaymentController extends Controller
 
             return response()->json(['status' => $payment->status, 'payment_id' => $payment->id, 'status_detail' => $payment->status_detail ?? null]);
         } catch (MPApiException $e) {
-            $errorDetails = json_decode($e->getApiResponse()->getContent(), true);
+            $errorDetails = $e->getApiResponse()->getContent();
             \Log::error('MP API Error:', ['error' => $errorDetails, 'request' => $request->all()]);
             return response()->json(['error' => true, 'message' => 'Pagamento recusado.', 'details' => $errorDetails], 400);
         } catch (\Exception $e) {
