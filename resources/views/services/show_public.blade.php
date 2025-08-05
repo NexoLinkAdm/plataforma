@@ -36,7 +36,7 @@
         </div>
     </div>
 
-    <script>
+   <script>
     document.addEventListener('DOMContentLoaded', async function () {
         const publicKey = '{{ $publicKey ?? '' }}';
         const preferenceId = '{{ $preferenceId ?? '' }}';
@@ -51,9 +51,13 @@
         try {
             await mp.bricks().create('payment', 'paymentBrick_container', {
                 initialization: {
-                    // Ao usar preferenceId, o 'amount' é opcional,
-                    // pois ele já está dentro da preferência.
+                    // --- INÍCIO DA CORREÇÃO ---
+                    // A API do Brick exige AMBOS os parâmetros:
+                    // 1. O valor total da transação.
+                    amount: {{ $service->price_in_cents / 100 }},
+                    // 2. O ID da preferência que contém os detalhes (split, etc).
                     preferenceId: preferenceId,
+                    // --- FIM DA CORREÇÃO ---
                 },
                 customization: {
                     visual: {
@@ -61,14 +65,18 @@
                     }
                 },
                 callbacks: {
-                    onError: (error) => console.error('Erro no Brick:', error),
+                    onError: (error) => {
+                        console.error('Erro no Brick:', error);
+                        const errorContainer = document.getElementById('payment_error_container');
+                        errorContainer.innerText = 'Ocorreu um erro. Verifique os dados e tente novamente.';
+                    },
                     onReady: () => console.log('Brick pronto.'),
                     onSubmit: () => console.log('Formulário enviado.'),
                 },
             });
             console.log('Brick renderizado com sucesso.');
         } catch (e) {
-            console.error('Erro ao renderizar o Brick:', e);
+            console.error('Erro fatal ao renderizar o Brick:', e);
             document.getElementById('paymentBrick_container').innerText = 'Erro fatal ao carregar o formulário de pagamento (ID: P02).';
         }
     });
