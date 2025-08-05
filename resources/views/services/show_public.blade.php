@@ -5,87 +5,105 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Comprar: {{ $service->title }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    {{-- SDK do Mercado Pago --}}
     <script src="https://sdk.mercadopago.com/js/v2"></script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
-    <div class="w-full max-w-2xl bg-white rounded-lg shadow-md">
 
+    <div class="w-full max-w-xl bg-white rounded-xl shadow-lg overflow-hidden">
         <div class="p-8">
-            <h1 class="text-2xl font-bold text-gray-800 mb-2">
-                {{ $service->title }}
-            </h1>
-            <p class="text-gray-600 mb-6">Oferecido por: <span class="font-semibold">{{ $service->user->name }}</span></p>
+            <header class="text-center mb-6">
+                <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Finalize seu Pagamento</h1>
+                <p class="text-gray-500 mt-1">Plataforma Segura via Mercado Pago</p>
+            </header>
 
-            <div class="border-t border-b py-6 my-6">
-                <p class="mt-4 text-gray-700 text-left whitespace-pre-wrap">{{ $service->description }}</p>
-                <ul class="text-sm text-gray-600 mt-4 space-y-2">
-                    <li><strong>Prazo de Entrega:</strong> {{ $service->delivery_time_days }} dias</li>
-                    <li><strong>Revisões Inclusas:</strong> {{ $service->revisions_limit }}</li>
-                </ul>
-                <div class="mt-4 text-4xl font-bold text-blue-600">
-                    R$ {{ number_format($service->price_in_cents / 100, 2, ',', '.') }}
+            {{-- Resumo do Pedido --}}
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-8 border border-gray-200 dark:border-gray-700">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="font-semibold text-gray-800 dark:text-gray-200">{{ $service->title }}</h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">por {{ $service->user->name }}</p>
+                    </div>
+                    <div class="text-lg font-bold text-gray-900 dark:text-gray-100">
+                        R$ {{ number_format($service->price_in_cents / 100, 2, ',', '.') }}
+                    </div>
                 </div>
             </div>
-        </div>
 
-        {{-- O Checkout Brick será renderizado aqui --}}
-        <div class="px-8 pb-8">
+            {{-- Container onde o Brick será renderizado --}}
             <div id="paymentBrick_container"></div>
+            {{-- Mensagem de erro para o usuário --}}
+            <div id="payment_error_container" class="text-red-500 text-center text-sm mt-4"></div>
         </div>
-
     </div>
-        <script>
-        // Adiciona um listener que espera o DOM estar pronto
-        document.addEventListener('DOMContentLoaded', function () {
-            console.log('DOM carregado. Iniciando script do Mercado Pago.');
 
-            // Verifica se as variáveis essenciais existem
-            const publicKey = '{{ $publicKey ?? null }}';
-            const preferenceId = '{{ $preferenceId ?? null }}';
+    <script>
+        document.addEventListener('DOMContentLoaded', async function () {
+            // As chaves são passadas do backend (controller) para a view
+            const publicKey = '{{ $publicKey ?? '' }}';
+            const preferenceId = '{{ $preferenceId ?? '' }}';
 
             if (!publicKey || !preferenceId) {
-                console.error('Erro Crítico: Public Key ou Preference ID não foram encontradas. Verifique o backend.');
-                // Opcional: mostrar uma mensagem para o usuário
-                document.getElementById('paymentBrick_container').innerHTML = '<p class="text-red-500 text-center">Ocorreu um erro ao carregar o pagamento. Tente recarregar a página.</p>';
+                document.getElementById('paymentBrick_container').innerText = 'Erro: Não foi possível carregar as informações de pagamento. Tente novamente.';
                 return;
             }
 
-            console.log('Public Key:', publicKey);
-            console.log('Preference ID:', preferenceId);
+            const mp = new MercadoPago(publicKey, { locale: 'pt-BR' });
+            const bricksBuilder = mp.bricks();
 
+            // Configurações do Brick
+            const settings = {
+                initialization: {
+                    amount: {{ $service->price_in_cents / 100 }}, // Valor total a ser pago
+                    preferenceId: preferenceId,
+                },
+                customization: {
+                    visual: {
+                        brand: "{{ config('mercadopago.app_name', 'Sua Plataforma') }}", // Nome da sua plataforma
+                        style: {
+                            theme: 'default', // 'default', 'dark', 'bootstrap'
+                        }
+                    },
+                },
+                callbacks: {
+                    onReady: () => {
+                        /*
+                         * Callback chamado quando o Brick estiver pronto.
+                         * Ex: Habilitar o botão de pagamento
+                         */
+                        console.log('Brick está pronto.');
+                    },
+                    onSubmit: ({ selectedPaymentMethod, formData }) => {
+                        /*
+                         * Callback chamado quando o usuário clica no botão de pagar.
+                         * O Brick cuida do envio dos dados do formulário para o Mercado Pago.
+                         * A Promise vazia indica ao Brick para seguir com seu fluxo padrão.
+                         */
+                        console.log('Formulário enviado.');
+                        return new Promise(() => {});
+                    },
+                    onError: (error) => {
+                        /*
+                         * Callback chamado para todos os erros que ocorrem no Brick.
+                         * Ex: Cartão recusado, dados inválidos, etc.
+                         */
+                        console.error('Erro no Brick:', error);
+                        const errorContainer = document.getElementById('payment_error_container');
+                        if (error.message) {
+                            errorContainer.innerText = error.message;
+                        } else {
+                            errorContainer.innerText = 'Ocorreu um erro ao processar o pagamento. Verifique os dados e tente novamente.';
+                        }
+                    },
+                },
+            };
+
+            // `renderPaymentBrick` é uma função async, então usamos `await`
             try {
-                const mp = new MercadoPago(publicKey, {
-                    locale: 'pt-BR'
-                });
-                const bricksBuilder = mp.bricks();
-
-                const settings = {
-                    initialization: {
-                        amount: {{ $service->price_in_cents / 100 }},
-                        preferenceId: preferenceId,
-                    },
-                    customization: {
-                        visual: { style: { theme: 'default' } },
-                        paymentMethods: { maxInstallments: 12 }
-                    },
-                    callbacks: {
-                        onReady: () => console.log('Payment Brick está pronto.'),
-                        onSubmit: ({ selectedPaymentMethod, formData }) => {
-                            console.log('Formulário enviado. O Brick cuidará do resto.');
-                            return new Promise(() => {});
-                        },
-                        onError: (error) => console.error('Erro no callback do Brick:', error),
-                    },
-                };
-
-                console.log('Tentando renderizar o Payment Brick...');
-                bricksBuilder.create('payment', 'paymentBrick_container', settings)
-                    .then(() => console.log('SUCESSO: Payment Brick renderizado.'))
-                    .catch(error => console.error('FALHA ao renderizar Payment Brick:', error));
-
-            } catch (e) {
-                console.error('Erro ao inicializar o SDK do Mercado Pago:', e);
+                window.paymentBrickController = await bricksBuilder.create('payment', 'paymentBrick_container', settings);
+                console.log('Brick renderizado com sucesso.');
+            } catch (error) {
+                console.error('Erro fatal ao renderizar o Brick:', error);
+                document.getElementById('paymentBrick_container').innerText = 'Não foi possível carregar o formulário de pagamento. Por favor, recarregue a página.';
             }
         });
     </script>
