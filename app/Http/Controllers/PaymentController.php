@@ -32,18 +32,18 @@ class PaymentController extends Controller
             $formData = $validated['formData'];
 
             // Usa o Access Token da criadora para receber o pagamento
-            MercadoPagoConfig::setAccessToken($service->user->mp_access_token);
+            MercadoPagoConfig::setAccessToken(config('mercadopago.access_token'));
             $client = new PaymentClient();
 
             // Formata os valores para evitar erros de precisão
-            $transactionAmount = round((float)$formData['transaction_amount'], 2);
+            $transactionAmount = round((float) $formData['transaction_amount'], 2);
             $applicationFee = round(config('mercadopago.application_fee_cents', 0) / 100, 2);
 
             $paymentRequest = [
                 "transaction_amount" => $transactionAmount,
                 "token" => trim($formData['token']),
                 "description" => $service->title,
-                "installments" => (int)$formData['installments'],
+                "installments" => (int) $formData['installments'],
                 "payment_method_id" => $formData['payment_method_id'],
                 "application_fee" => $applicationFee, // Nossa comissão
                 "payer" => [
@@ -57,7 +57,7 @@ class PaymentController extends Controller
             ];
 
             if (!empty($formData['issuer_id'])) {
-                $paymentRequest['issuer_id'] = (int)$formData['issuer_id'];
+                $paymentRequest['issuer_id'] = (int) $formData['issuer_id'];
             }
 
             \Log::info('Requisição de pagamento (Formatada):', $paymentRequest);
@@ -69,11 +69,11 @@ class PaymentController extends Controller
         } catch (MPApiException $e) {
             $errorDetails = $e->getApiResponse()->getContent();
             \Log::error('MP API Error:', ['error' => $errorDetails, 'request' => $request->all()]);
-            
+
             // Tratamento de erro específico para token inválido/expirado
             if (isset($errorDetails['cause'][0]['code']) && $errorDetails['cause'][0]['code'] === 2006) {
                 return response()->json([
-                    'error' => true, 
+                    'error' => true,
                     'message' => 'O token do cartão expirou. Por favor, tente novamente.',
                     'code' => 'token_expired'
                 ], 400);
