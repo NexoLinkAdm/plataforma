@@ -58,4 +58,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
 | Rotas de Autenticação do Breeze
 |--------------------------------------------------------------------------
 */
-require __DIR__.'/auth.php';```
+require __DIR__.'/auth.php';
