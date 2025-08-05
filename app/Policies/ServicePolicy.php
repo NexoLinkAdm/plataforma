@@ -1,60 +1,53 @@
 <?php
 
-namespace App\Policies; // Namespace correto
+namespace App\Policies;
 
 use App\Models\Service;
 use App\Models\User;
+use Illuminate\Auth\Access\Response;
 
-class ServicePolicy // Nome da classe correto
+class ServicePolicy
 {
     /**
-     * Verifica se o usuário pode visualizar a listagem de serviços (no painel, por exemplo).
+     * Determine whether the user can view the model.
+     *
+     * Usado implicitamente pelo Laravel ao resolver a rota.
+     * Permite que qualquer usuário veja o serviço, mas a lógica de edição/exclusão
+     * será mais restrita.
+     *
+     * @param  \App\Models\User|null  $user
+     * @param  \App\Models\Service  $service
+     * @return bool
      */
-    public function viewAny(User $user): bool
+    public function view(?User $user, Service $service): bool
     {
-        // Permitir a todos os usuários autenticados
+        // Por enquanto, qualquer um pode TENTAR ver a página de edição,
+        // mas a verificação 'update' irá barrá-lo se não for o dono.
+        // Ou, para ser mais seguro, podemos fazer a verificação aqui também.
+        // Vamos deixar aberto por enquanto e focar na edição.
         return true;
     }
 
     /**
-     * Verifica se o usuário pode visualizar um serviço específico.
+     * Determine whether the user can update the model.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Service  $service
+     * @return bool
      */
-    public function view(User $user, Service $service): bool
+    public function update(User $user, Service $service): bool
     {
-        // Se o serviço é público, pode personalizar aqui. Exemplo:
         return $user->id === $service->user_id;
-        
     }
 
     /**
-     * Verifica se o usuário pode criar um novo serviço.
-     */
-    public function create(User $user): bool
-    {
-        // Permitir a todos os usuários autenticados
-        return true;
-    }
-
-    /**
-     * Verifica se o usuário pode atualizar o serviço.
-     */
-    public function view(User $user, Service $service): bool
-{
-    return $user->id === $service->user_id;
-}
-
-    /**
-     * Verifica se o usuário pode excluir o serviço.
+     * Determine whether the user can delete the model.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Service  $service
+     * @return bool
      */
     public function delete(User $user, Service $service): bool
-    {
-        return $user->id === $service->user_id;
-    }
-
-    /**
-     * Verifica se o usuário pode restaurar um serviço deletado (se usar soft deletes).
-     */
-    public function restore(User $user, Service $service): bool
     {
         return $user->id === $service->user_id;
     }
