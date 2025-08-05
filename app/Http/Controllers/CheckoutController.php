@@ -15,31 +15,23 @@ class CheckoutController extends Controller
     /**
      * Exibe a página de checkout para um serviço específico.
      */
-    public function show(Service $service)
+        public function show(Service $service)
     {
         if (!$service->is_active) {
             abort(404);
         }
 
-        // Recupera o token de acesso da criadora
         $creatorAccessToken = $service->user->mp_access_token;
         if (!$creatorAccessToken) {
             return back()->with('error', 'A criadora deste serviço não está com a conta de pagamentos conectada.');
         }
 
         try {
-            // --- NOVA ABORDAGEM SDK V3----
-            // 1. Define o token de acesso da CRIADORA para esta requisição específica.
             MercadoPagoConfig::setAccessToken($creatorAccessToken);
-            // --- FIM DA NOVA ABORDAGEM ---
 
-            // 2. Cria o cliente de preferência (ele usará o token que acabamos de definir)
             $client = new PreferenceClient();
-
-            // 3. Define a comissão da plataforma
             $application_fee = config('mercadopago.application_fee_cents') / 100;
 
-            // 4. Cria a preferência
             $preference = $client->create([
                 "items" => [
                     [
@@ -59,23 +51,22 @@ class CheckoutController extends Controller
                     'pending' => route('checkout.status'),
                 ],
                 "auto_return" => "approved",
+                // --- A CORREÇÃO ---
+                "payment_methods" => [
+                    "excluded_payment_methods" => [],
+                    "excluded_payment_types" => [],
+                    "installments" => 12
+                ]
             ]);
 
         } catch (MPApiException $e) {
-            // Log detalhado para o desenvolvedor
-            \Log::error('MP API Error on Checkout', [
-                'service_id' => $service->id,
-                'creator_id' => $service->user->id,
-                'error_message' => $e->getApiResponse()->getContent()
-            ]);
-            // Mensagem genérica para o usuário
+            \Log::error('MP API Error on Checkout', ['service_id' => $service->id, 'creator_id' => $service->user->id, 'error_message' => $e->getApiResponse()->getContent()]);
             return redirect()->route('home')->with('error', 'Não foi possível iniciar o pagamento. A configuração da criadora pode estar incompleta.');
         } catch (\Exception $e) {
             \Log::critical('General Error on Checkout', ['message' => $e->getMessage()]);
             return redirect()->route('home')->with('error', 'Ocorreu um erro inesperado. Nossa equipe já foi notificada.');
         }
 
-        // A Public Key é sempre a da plataforma, para o frontend
         $publicKey = config('mercadopago.public_key');
         $preferenceId = $preference->id;
 
