@@ -8,54 +8,43 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Rotas Públicas
+| Rotas Públicas (Acessíveis a todos)
 |--------------------------------------------------------------------------
-|
-| Rotas acessíveis para qualquer visitante, logado ou não.
-|
 */
-
 Route::get('/', function () {
     return view('welcome');
 });
 
-// Página pública de um serviço, acessada via slug
 Route::get('/servico/{service:slug}', [ServiceController::class, 'show'])->name('service.show.public');
 
 
 /*
 |--------------------------------------------------------------------------
-| Rotas Autenticadas
+| Rotas Protegidas (Exigem Login)
 |--------------------------------------------------------------------------
-|
-| Rotas que exigem que o usuário (criadora) esteja logado e com o
-| e-mail verificado.
-|
 */
-
 Route::middleware(['auth'])->group(function () {
 
-    // Dashboard Principal
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
-    // Gerenciamento de Perfil (do Breeze)
+    // Perfil do Usuário
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Gerenciamento de Serviços (CRUD)
-    Route::resource('servicos', ServiceController::class)->except(['show']);
-
-    // Conexão com Mercado Pago (OAuth)
+    // Conexão Mercado Pago
     Route::get('/conectar-mercadopago', [MercadoPagoController::class, 'redirectToOAuth'])->name('mp.connect');
     Route::get('/oauth/callback', [MercadoPagoController::class, 'handleOAuthCallback'])->name('mp.callback');
 
+    // Gerenciamento de Serviços (CRUD)
+    // A rota 'index' está aqui para ser acessada pelo menu de navegação.
+    Route::get('/servicos', [ServiceController::class, 'index'])->name('servicos.index');
+    Route::get('/servicos/criar', [ServiceController::class, 'create'])->name('servicos.create');
+    Route::post('/servicos', [ServiceController::class, 'store'])->name('servicos.store');
+    Route::get('/servicos/{service}/edit', [ServiceController::class, 'edit'])->name('servicos.edit');
+    Route::put('/servicos/{service}', [ServiceController::class, 'update'])->name('servicos.update');
+    Route::delete('/servicos/{service}', [ServiceController::class, 'destroy'])->name('servicos.destroy');
+
 });
 
-
-/*
-|--------------------------------------------------------------------------
-| Rotas de Autenticação do Breeze
-|--------------------------------------------------------------------------
-*/
 require __DIR__.'/auth.php';

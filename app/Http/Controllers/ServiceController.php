@@ -4,12 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreServiceRequest;
 use App\Models\Service;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Gate; // Usaremos o Gate para uma verificação simples
 
 class ServiceController extends Controller
 {
+    // ... os métodos index, create, store, show permanecem como antes ...
+
     public function index()
     {
         $services = Auth::user()->services()->latest()->paginate(10);
@@ -33,28 +33,26 @@ class ServiceController extends Controller
     }
 
     /**
-     * LÓGICA SIMPLIFICADA PARA 'EDITAR'
+     * Mostra o formulário para editar o serviço.
      */
     public function edit(Service $service)
     {
-        // Verificação manual: o ID do usuário logado é o mesmo do dono do serviço?
+        // Lógica de autorização manual e direta
         if (Auth::id() !== $service->user_id) {
-            // Se não for, aborte a operação com um erro 403.
-            abort(403, 'Acesso Negado');
+            abort(403, 'Acesso não autorizado.');
         }
 
-        // Se a verificação passar, mostre a view.
         return view('services.edit', compact('service'));
     }
 
     /**
-     * LÓGICA SIMPLIFICADA PARA 'ATUALIZAR'
+     * Atualiza o serviço no banco de dados.
      */
     public function update(StoreServiceRequest $request, Service $service)
     {
-        // Verificação manual.
+        // Lógica de autorização manual e direta
         if (Auth::id() !== $service->user_id) {
-            abort(403, 'Acesso Negado');
+            abort(403, 'Acesso não autorizado.');
         }
 
         $service->update($request->validated());
@@ -62,13 +60,13 @@ class ServiceController extends Controller
     }
 
     /**
-     * LÓGICA SIMPLIFICADA PARA 'EXCLUIR'
+     * Remove o serviço do banco de dados.
      */
     public function destroy(Service $service)
     {
-        // Verificação manual.
+        // Lógica de autorização manual e direta
         if (Auth::id() !== $service->user_id) {
-            abort(403, 'Acesso Negado');
+            abort(403, 'Acesso não autorizado.');
         }
 
         $service->delete();
