@@ -2,35 +2,46 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+// Adicione esta linha no topo
+use Illuminate\Database\Eloquent\Casts\Attribute;
+
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $fillable = [
         'name',
         'email',
         'password',
+        // Adicione os novos campos aqui
+        'mp_user_id',
+        'mp_access_token',
+        'mp_refresh_token',
+        'mp_token_expires_at',
+        'mp_connected_at',
     ];
 
     /**
      * The attributes that should be hidden for serialization.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $hidden = [
         'password',
         'remember_token',
+        // É uma boa prática ocultar os tokens
+        'mp_access_token',
+        'mp_refresh_token',
     ];
 
     /**
@@ -43,6 +54,19 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            // Trata as datas e CRIPTOGRAFA os tokens
+            'mp_token_expires_at' => 'datetime',
+            'mp_connected_at' => 'datetime',
+            'mp_access_token' => 'encrypted',
+            'mp_refresh_token' => 'encrypted',
         ];
+    }
+
+    /**
+     * Verifica se a criadora conectou sua conta do Mercado Pago.
+     */
+    public function hasMercadoPagoConnected(): bool
+    {
+        return !is_null($this->mp_user_id) && !is_null($this->mp_access_token);
     }
 }
