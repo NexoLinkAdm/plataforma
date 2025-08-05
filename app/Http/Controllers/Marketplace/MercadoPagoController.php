@@ -7,7 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
-use MercadoPago\Client\OAuth\OAuthClient; // <-- FIX: Importa a classe que estava faltando.
+use MercadoPago\Client\OAuth\OAuthClient;
+use MercadoPago\Client\OAuth\OAuthCreateRequest; // <-- FIX: Importa a classe de requisição necessária.
 use MercadoPago\Exceptions\MPApiException;
 
 class MercadoPagoController extends Controller
@@ -31,7 +32,6 @@ class MercadoPagoController extends Controller
      */
     public function handleOAuthCallback(Request $request)
     {
-        // Verifica se o Mercado Pago retornou um erro
         if ($request->has('error')) {
             Log::error('Mercado Pago OAuth Error', [
                 'error' => $request->error,
@@ -41,7 +41,6 @@ class MercadoPagoController extends Controller
                 ->with('status', 'Falha ao conectar com o Mercado Pago. Tente novamente.');
         }
 
-        // Verifica se o código de autorização foi recebido
         $authorizationCode = $request->query('code');
         if (!$authorizationCode) {
             return redirect()->route('dashboard')
@@ -49,17 +48,21 @@ class MercadoPagoController extends Controller
         }
 
         try {
-            // Troca o código de autorização por um token de acesso
+            // --- FIX: Adaptação para o SDK v3.x ---
             $client = new OAuthClient();
-            $response = $client->create([
-                "client_secret" => config('mercadopago.client_secret'),
-                "client_id" => config('mercadopago.client_id'),
-                "grant_type" => "authorization_code",
-                "code" => $authorizationCode,
-                "redirect_uri" => config('mercadopago.oauth_redirect_uri'),
-            ]);
 
-            // Atualiza os dados da criadora logada
+            // 1. Cria o objeto de requisição
+            $oauthRequest = new OAuthCreateRequest();
+            $oauthRequest->client_secret = config('mercadopago.client_secret');
+            $oauthRequest->client_id = config('mercadopago.client_id');
+            $oauthRequest->grant_type = 'authorization_code';
+            $oauthRequest->code = $authorizationCode;
+            $oauthRequest->redirect_uri = config('mercadopago.oauth_redirect_uri');
+
+            // 2. Passa o objeto para o método create()
+            $response = $client->create($oauthRequest);
+            // --- Fim da correção ---
+
             $user = Auth::user();
             $user->update([
                 'mp_user_id' => $response->user_id,
