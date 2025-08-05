@@ -32,6 +32,7 @@ class MercadoPagoServiceProvider extends ServiceProvider
             // Este token será o padrão, mas poderá ser trocado dinamicamente
             // para usar o token da criadora ao processar um pagamento específico.
             SDK::setAccessToken($accessToken);
+            
         }
     }
 }

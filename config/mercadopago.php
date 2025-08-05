@@ -37,5 +37,6 @@ return [
     | a autorização OAuth. Deve corresponder à configurada no painel.
     |
     */
-    'oauth_redirect_uri' => env('APP_URL', 'http://localhost') . '/oauth/callback',
+    'oauth_redirect_uri' => rtrim(env('APP_URL', 'http://localhost'), '/') . '/oauth/callback',
+
 ];
