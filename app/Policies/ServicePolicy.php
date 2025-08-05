@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Policies;
+namespace App\Policies; // Namespace correto
 
 use App\Models\Service;
 use App\Models\User;
 
-class ServicePolicy
+class ServicePolicy // Nome da classe correto
 {
     /**
      * Verifica se o usuário pode visualizar a listagem de serviços (no painel, por exemplo).
@@ -23,6 +23,7 @@ class ServicePolicy
     {
         // Se o serviço é público, pode personalizar aqui. Exemplo:
         return $user->id === $service->user_id;
+        
     }
 
     /**
@@ -37,10 +38,10 @@ class ServicePolicy
     /**
      * Verifica se o usuário pode atualizar o serviço.
      */
-    public function update(User $user, Service $service): bool
-    {
-        return $user->id === $service->user_id;
-    }
+    public function view(User $user, Service $service): bool
+{
+    return $user->id === $service->user_id;
+}
 
     /**
      * Verifica se o usuário pode excluir o serviço.

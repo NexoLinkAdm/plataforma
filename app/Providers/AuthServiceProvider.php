@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Providers;
+namespace App\Providers; // Namespace correto
 
 use App\Models\Service;
 use App\Policies\ServicePolicy;
@@ -13,8 +13,8 @@ class AuthServiceProvider extends ServiceProvider
      *
      * @var array<class-string, class-string>
      */
-    protected $policies = [
-        Service::class => ServicePolicy::class,
+     protected $policies = [
+        Service::class => ServicePolicy::class, // Registro explícito
     ];
 
     /**

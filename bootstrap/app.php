@@ -21,6 +21,6 @@ return Application::configure(basePath: dirname(__DIR__))
         // ESTA É A FORMA CORRETA DE REGISTRAR PROVIDERS CUSTOMIZADOS
         // NO LARAVEL 12.29+
         \App\Providers\MercadoPagoServiceProvider::class,
-        \App\Providers\AuthServiceProvider::class,
+        \App\Providers\AuthServiceProvider::class, // <-- A linha que carrega nosso provedor
     ])
     ->create();
