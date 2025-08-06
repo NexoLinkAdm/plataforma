@@ -17,7 +17,7 @@ set PLINK_PATH=C:\Users\geova\Downloads\plink.exe
 REM Caminho para a chave privada
 set KEY_PATH=C:\laragon\www\pagamento\.ssh\id_ed25519
 
-REM Executa o comando remoto (garante que commits pendentes sejam aplicados)
+REM Executa o comando remoto
 "%PLINK_PATH%" -i "%KEY_PATH%" -P 2222 geova855@108.179.252.230 "cd public_html && git fetch origin main && git reset --hard origin/main"
 
 pause
