@@ -2,6 +2,7 @@
 echo.
 echo ===== Enviando código para o GitHub =====
 cd /d C:\laragon\www\pagamento
+git remote set-url origin https://github.com/NexoLinkAdm/plataforma.git
 git add .
 git commit -m "atualização automática"
 git push origin main
