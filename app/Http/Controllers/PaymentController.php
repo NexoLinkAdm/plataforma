@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Http\Controllers;
-
 // --- INÍCIO DA CORREÇÃO ---
-// Adicionando todos os Models e Classes que o controller utiliza
+namespace App\Http\Controllers; // <-- CORRIGIDO: Namespace com contrabarra
+// --- FIM DA CORREÇÃO ---
+
 use App\Events\TransactionApproved;
 use App\Models\Order;
 use App\Models\Service;
@@ -18,21 +18,31 @@ use Illuminate\Support\Str;
 use MercadoPago\Client\Payment\PaymentClient;
 use MercadoPago\Exceptions\MPApiException;
 use MercadoPago\MercadoPagoConfig;
-// --- FIM DA CORREÇÃO ---
 
 class PaymentController extends Controller
 {
     public function processPayment(Request $request): JsonResponse
     {
         Log::info('Dados recebidos no processPayment', ['payload' => $request->all()]);
-        
+
         // Validação Flexível (Funciona para Cartão, Pix e Boleto)
         $paymentMethod = $request->input('formData.payment_method_id');
-        $baseRules = [ 'formData.payment_method_id' => 'required|string', 'formData.transaction_amount' => 'required|numeric|min:0.01', 'formData.payer.email' => 'required|email', 'service_id' => 'required|integer|exists:services,id', ];
-        $cardRules = [ 'formData.token' => 'required|string|min:32', 'formData.issuer_id' => 'required|string', 'formData.installments' => 'required|integer|min:1', 'formData.payer.identification.type' => 'required|string', 'formData.payer.identification.number' => 'required|string', ];
+        $baseRules = [
+            'formData.payment_method_id' => 'required|string',
+            'formData.transaction_amount' => 'required|numeric|min:0.01',
+            'formData.payer.email' => 'required|email',
+            'service_id' => 'required|integer|exists:services,id',
+        ];
+        $cardRules = [
+            'formData.token' => 'required|string|min:32',
+            'formData.issuer_id' => 'required|string',
+            'formData.installments' => 'required|integer|min:1',
+            'formData.payer.identification.type' => 'required|string',
+            'formData.payer.identification.number' => 'required|string',
+        ];
         $rules = !in_array($paymentMethod, ['pix', 'bolbradesco']) ? array_merge($baseRules, $cardRules) : $baseRules;
-
         $validator = Validator::make($request->all(), $rules);
+
         if ($validator->fails()) {
             return response()->json(['message' => 'Dados de pagamento inválidos.', 'errors' => $validator->errors()], 422);
         }
