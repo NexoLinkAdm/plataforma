@@ -16,20 +16,18 @@ class CheckoutController extends Controller
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
     public function show(Service $service)
-    {
-        // Validação: Garante que a criadora está apta a vender este serviço
-        if (!$service->user->hasMercadoPagoConnected() || empty($service->user->mp_public_key)) {
-            
-            // Redireciona para a página inicial se a configuração do vendedor estiver incompleta.
-            return redirect('/')->with('error', 'O vendedor deste serviço não está configurado corretamente para receber pagamentos.');
-        }
-
-        // Pega a Public Key da CRIADORA (essencial para a arquitetura correta do split).
-        $publicKey = $service->user->mp_public_key;
+{
+    // A condição de segurança
+    if (!$service->user->hasMercadoPagoConnected() || empty($service->user->mp_public_key)) {
         
-        // Retorna a view do checkout, passando o serviço e a chave pública da criadora.
-        return view('services.show_public', compact('service', 'publicKey'));
+        // A ação que está acontecendo
+        return redirect('/')->with('error', 'O vendedor ...');
     }
+
+    // O código só chega aqui se a condição acima for FALSA
+    $publicKey = $service->user->mp_public_key;
+    return view('services.show_public', compact('service', 'publicKey'));
+}
 
     /**
      * Lida com o retorno do Mercado Pago (para redirecionamentos de alguns métodos de pagamento).
