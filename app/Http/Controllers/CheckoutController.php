@@ -7,18 +7,17 @@ use Illuminate\Http\Request;
 
 class CheckoutController extends Controller
 {
-    /**
-     * Exibe a página de checkout para um serviço específico.
-     */
     public function show(Service $service)
     {
-        // Valida se o serviço pode ser vendido
-        if (!$service->is_active || !$service->user->hasMercadoPagoConnected()) {
-            return redirect()->route('home')->with('error', 'Este serviço não está disponível no momento.');
+        if (!$service->user->hasMercadoPagoConnected() || empty($service->user->mp_public_key)) {
+            // Se a criadora não estiver conectada OU não tiver a public_key salva, o serviço não pode ser vendido.
+            return redirect()->route('home')->with('error', 'O vendedor deste serviço não está configurado para receber pagamentos.');
         }
 
-        // A Public Key para o frontend é sempre a da PLATAFORMA.
-        $publicKey = config('mercadopago.public_key');
+        // --- MUDANÇA CRÍTICA ---
+        // Pega a Public Key da CRIADORA, e não a da plataforma.
+        $publicKey = $service->user->mp_public_key;
+        // --- FIM DA MUDANÇA ---
 
         return view('services.show_public', compact('service', 'publicKey'));
     }
