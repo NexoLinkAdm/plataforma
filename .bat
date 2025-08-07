@@ -18,7 +18,7 @@ REM Caminho para a chave privada
 set "KEY_PATH=C:\laragon\www\pagamento\.ssh\id_ed25519"
 
 REM Comando remoto
-set "REMOTE_CMD=cd public_html && git fetch origin main && git reset --hard origin/main"
+set "REMOTE_CMD=cd public_html/public && git fetch origin main && git reset --hard origin/main"
 
 REM Função para executar SSH com retry se falhar
 :SSH_DEPLOY
