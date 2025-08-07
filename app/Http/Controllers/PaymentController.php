@@ -18,7 +18,7 @@ use MercadoPago\Exceptions\MPApiException;
 use MercadoPago\MercadoPagoConfig;
 
 
-//versão de teste para faze boloteos e pix funcionar
+//versão de teste para faze boloteos e pix funcionar a primeria tentativa
 class PaymentController extends Controller
 {
     public function processPayment(Request $request): JsonResponse
